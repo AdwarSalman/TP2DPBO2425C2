@@ -1,4 +1,5 @@
 JANJI
+
 Saya Muhammad Adwar Salman dengan NIM 2401539 mengerjakan Tugas Praktikum 2 dalam mata kuliah Desain Pemrograman Berbasis Objek untuk keberkahanNya maka saya tidak melakukan kecurangan seperti yang telah dispesifikasikan. Aamiin.
 
 🏗️ Desain Diagram Kelas
@@ -96,6 +97,7 @@ CPP
 
 <img width="1362" height="829" alt="Screenshot 2025-09-24 231851" src="https://github.com/user-attachments/assets/81ea4201-6c88-4942-a8ad-8c7fd2d7684f" />
 
+btw ini .h karena compiler nya ngamuk gamau .cpp
 
 Java
 
