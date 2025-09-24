@@ -1,74 +1,126 @@
 <?php
 session_start();
 
-// kosongkan session jika rusak
-if (!isset($_SESSION['produk'])) {
-    $_SESSION['produk'] = [];
+// ==================== CLASS ====================
+abstract class Produk {
+    protected $nama;
+    protected $harga;
+    protected $foto;
+
+    public function __construct($nama, $harga, $foto) {
+        $this->nama = $nama;
+        $this->harga = $harga;
+        $this->foto = $foto;
+    }
+
+    public function getNama() {
+        return $this->nama;
+    }
+
+    public function getHarga() {
+        return $this->harga;
+    }
+
+    public function getFoto() {
+        return $this->foto;
+    }
+
+    abstract public function getInfo();
 }
 
-// load semua class
-require_once 'Aksesoris.php';
-require_once 'Laptop.php';
-require_once 'Handphone.php';
+class Elektronik extends Produk {
+    protected $brand;
+    protected $garansi;
+    protected $stok;
 
-// tambah produk default (hanya sekali)
-if (empty($_SESSION['produk'])) {
-    $_SESSION['produk'][] = new Aksesoris(1, "Headset Gaming", 250000, "Rexus", 12, 10, "Headset", "Hitam", "PC/HP", "foto1.jpg");
-    $_SESSION['produk'][] = new Aksesoris(2, "Mouse Wireless", 150000, "Logitech", 12, 20, "Mouse", "Putih", "Laptop/PC", "foto2.jpg");
-    $_SESSION['produk'][] = new Laptop(3, "ASUS ROG", 15000000, "ASUS", 24, 5, "Intel i7", "16GB", "512GB SSD", "foto3.jpg");
-    $_SESSION['produk'][] = new Handphone(4, "Samsung Galaxy S23", 12000000, "Samsung", 12, 15, "Android", "6.1\"", "128GB", "foto4.jpg");
-    $_SESSION['produk'][] = new Handphone(5, "iPhone 14", 18000000, "Apple", 12, 8, "iOS", "6.1\"", "256GB", "foto5.jpg");
+    public function __construct($nama, $harga, $foto, $brand, $garansi, $stok) {
+        parent::__construct($nama, $harga, $foto);
+        $this->brand = $brand;
+        $this->garansi = $garansi;
+        $this->stok = $stok;
+    }
+
+    public function getBrand() {
+        return $this->brand;
+    }
+
+    public function getGaransi() {
+        return $this->garansi;
+    }
+
+    public function getStok() {
+        return $this->stok;
+    }
+
+    public function getInfo() {
+        return "Brand: {$this->brand}, Garansi: {$this->garansi} bulan, Stok: {$this->stok}";
+    }
 }
 
-// handle tambah produk
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+class Laptop extends Elektronik {
+    private $processor;
+
+    public function __construct($nama, $harga, $foto, $brand, $garansi, $stok, $processor) {
+        parent::__construct($nama, $harga, $foto, $brand, $garansi, $stok);
+        $this->processor = $processor;
+    }
+
+    public function getInfo() {
+        return parent::getInfo() . ", Processor: {$this->processor}";
+    }
+}
+
+class Handphone extends Elektronik {
+    private $ram;
+
+    public function __construct($nama, $harga, $foto, $brand, $garansi, $stok, $ram) {
+        parent::__construct($nama, $harga, $foto, $brand, $garansi, $stok);
+        $this->ram = $ram;
+    }
+
+    public function getInfo() {
+        return parent::getInfo() . ", RAM: {$this->ram} GB";
+    }
+}
+
+// ==================== DATA DEFAULT ====================
+if (!isset($_SESSION['produk_list'])) {
+    $_SESSION['produk_list'] = [
+        new Laptop("Laptop A", 7000000, "foto1.jpg", "Asus", 24, 10, "Intel i5"),
+        new Laptop("Laptop B", 9000000, "foto2.jpg", "Acer", 12, 5, "Intel i7"),
+        new Handphone("HP X", 5000000, "foto3.jpg", "Samsung", 12, 20, 8),
+        new Handphone("HP Y", 3000000, "foto4.jpg", "Xiaomi", 6, 15, 6),
+        new Handphone("HP Z", 10000000, "foto5.jpg", "Apple", 24, 8, 12)
+    ];
+}
+
+// ==================== HANDLE FORM ====================
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $nama = $_POST['nama'];
+    $harga = $_POST['harga'];
+    $brand = $_POST['brand'];
+    $garansi = $_POST['garansi'];
+    $stok = $_POST['stok'];
     $kategori = $_POST['kategori'];
 
-    if ($kategori === "Aksesoris") {
-        $produk = new Aksesoris(
-            count($_SESSION['produk']) + 1,
-            $_POST['nama'],
-            $_POST['harga'],
-            $_POST['brand'],
-            $_POST['garansi'],
-            $_POST['stok'],
-            $_POST['jenis'],
-            $_POST['warna'],
-            $_POST['compatibility'],
-            $_POST['foto']
-        );
-        $_SESSION['produk'][] = $produk;
+    // --- Handle file upload ---
+    $foto = "default.jpg"; // fallback
+    if (isset($_FILES['foto']) && $_FILES['foto']['error'] == 0) {
+        $target_dir = "img/";
+        $foto = basename($_FILES["foto"]["name"]);
+        $target_file = $target_dir . $foto;
+        move_uploaded_file($_FILES["foto"]["tmp_name"], $target_file);
     }
-    elseif ($kategori === "Laptop") {
-        $produk = new Laptop(
-            count($_SESSION['produk']) + 1,
-            $_POST['nama'],
-            $_POST['harga'],
-            $_POST['brand'],
-            $_POST['garansi'],
-            $_POST['stok'],
-            $_POST['prosesor'],
-            $_POST['ram'],
-            $_POST['storage'],
-            $_POST['foto']
-        );
-        $_SESSION['produk'][] = $produk;
+
+    if ($kategori === "Laptop") {
+        $processor = $_POST['processor'];
+        $produk_baru = new Laptop($nama, $harga, $foto, $brand, $garansi, $stok, $processor);
+    } elseif ($kategori === "Handphone") {
+        $ram = $_POST['ram'];
+        $produk_baru = new Handphone($nama, $harga, $foto, $brand, $garansi, $stok, $ram);
     }
-    elseif ($kategori === "Handphone") {
-        $produk = new Handphone(
-            count($_SESSION['produk']) + 1,
-            $_POST['nama'],
-            $_POST['harga'],
-            $_POST['brand'],
-            $_POST['garansi'],
-            $_POST['stok'],
-            $_POST['os'],
-            $_POST['layar'],
-            $_POST['storage'],
-            $_POST['foto']
-        );
-        $_SESSION['produk'][] = $produk;
-    }
+
+    $_SESSION['produk_list'][] = $produk_baru;
 }
 ?>
 
@@ -78,49 +130,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Toko Elektronik</title>
 </head>
 <body>
-    <h1>Daftar Produk</h1>
-    <?php foreach ($_SESSION['produk'] as $p): ?>
-        <div style="border:1px solid #ccc; padding:10px; margin:10px;">
-            <img src="img/<?= $p->getFotoProduk() ?>" width="100"><br>
-            <strong><?= $p->getKategori() ?> - <?= $p->getNama() ?></strong><br>
-            Harga: Rp<?= number_format($p->getHarga(),0,',','.') ?><br>
-            Brand: <?= $p->getBrand() ?><br>
-            Detail: <?= $p->getDetail() ?><br>
-        </div>
-    <?php endforeach; ?>
-
     <h2>Tambah Produk</h2>
-    <form method="post">
+    <!-- enctype wajib biar bisa upload file -->
+    <form method="post" enctype="multipart/form-data">
+        Nama: <input type="text" name="nama" required><br>
+        Harga: <input type="number" name="harga" required><br>
+        Foto: <input type="file" name="foto" accept="image/*"><br>
+        Brand: <input type="text" name="brand" required><br>
+        Garansi (bulan): <input type="number" name="garansi" required><br>
+        Stok: <input type="number" name="stok" required><br>
         Kategori:
-        <select name="kategori">
-            <option value="Aksesoris">Aksesoris</option>
+        <select name="kategori" required>
             <option value="Laptop">Laptop</option>
-            <option value="Smartphone">Smartphone</option>
-        </select><br><br>
-
-        Nama: <input type="text" name="nama"><br>
-        Harga: <input type="number" name="harga"><br>
-        Brand: <input type="text" name="brand"><br>
-        Garansi (bulan): <input type="number" name="garansi"><br>
-        Stok: <input type="number" name="stok"><br>
-        Foto: <input type="text" name="foto" placeholder="fotoX.jpg"><br><br>
-
-        <!-- Field khusus Aksesoris -->
-        Jenis: <input type="text" name="jenis"><br>
-        Warna: <input type="text" name="warna"><br>
-        Compatibility: <input type="text" name="compatibility"><br><br>
-
-        <!-- Field khusus Laptop -->
-        Prosesor: <input type="text" name="prosesor"><br>
-        RAM: <input type="text" name="ram"><br>
-        Storage: <input type="text" name="storage"><br><br>
-
-        <!-- Field khusus Smartphone -->
-        OS: <input type="text" name="os"><br>
-        Layar: <input type="text" name="layar"><br>
-        Storage (HP): <input type="text" name="storage"><br><br>
-
+            <option value="Handphone">Handphone</option>
+        </select><br>
+        Processor (untuk Laptop): <input type="text" name="processor"><br>
+        RAM (untuk Handphone): <input type="number" name="ram"><br>
         <button type="submit">Tambah</button>
     </form>
+
+    <h2>Daftar Produk</h2>
+    <table border="1" cellpadding="10">
+        <tr>
+            <th>Foto</th>
+            <th>Nama</th>
+            <th>Harga</th>
+            <th>Info</th>
+        </tr>
+        <?php foreach ($_SESSION['produk_list'] as $produk): ?>
+        <tr>
+            <td><img src="img/<?php echo $produk->getFoto(); ?>" width="100"></td>
+            <td><?php echo $produk->getNama(); ?></td>
+            <td>Rp <?php echo number_format($produk->getHarga(), 0, ',', '.'); ?></td>
+            <td><?php echo $produk->getInfo(); ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
 </body>
 </html>
